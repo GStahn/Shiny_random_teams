@@ -11,6 +11,19 @@ This R Shiny app allows users to create, manage, and randomly assign players to 
 - Export current teams to an `.xlsx` Excel file using `writexl`
 - Responsive UI with live updates
 
+## Use Cases
+
+This app can be helpful for a wide range of scenarios, including:
+
+- **Conducting experiments**: Distribute subjects randomly to either treatment or control groups. (Completely randomized design)
+- **University Seminars or Group Work**: Easily divide students into teams for projects or discussion groups.
+- **Workshops and Trainings**: Randomly assign participants to breakout groups.
+- **Sports and Hobby Groups**: Randomize players for weekly games or tournaments (e.g., soccer, volleyball, chess).
+- **Hackathons and Ideation Events**: Ensure balanced, randomized teams for fair collaboration.
+- **Language or Debate Clubs**: Organize rotating teams for practice rounds or friendly competitions.
+- **Game Nights or Board Game Events**: Shuffle groups for casual or competitive gameplay.
+
+
 ## Requirements
 
 - R (>= 4.0)

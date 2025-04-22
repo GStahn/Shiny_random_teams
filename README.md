@@ -1,4 +1,4 @@
-# Team Assignment App with Persistent Name List
+# Team Assignment App
 
 This R Shiny app allows users to create, manage, and randomly assign players to teams with a persistent name list saved locally. It includes features for editing teams manually and exporting the team structure to an Excel file.
 

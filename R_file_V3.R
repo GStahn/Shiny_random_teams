@@ -30,10 +30,10 @@ library(writexl)      # For exporting Excel files
 # Read player list from RDS file or initialize if file doesn't exist
 if (file.exists("spieler.rds")) {
   start_liste <- readRDS("spieler.rds")
-  spieler_liste <- sort(unlist(spieler)) # Sort by Name
+  spieler_liste <- sort(unlist(start_liste)) # Sort by Name
 } else {
   start_liste <- character(0)
-  spieler_liste <- sort(unlist(spieler)) # Sort by Name
+  spieler_liste <- sort(unlist(start_liste)) # Sort by Name
   saveRDS(spieler_liste, "spieler.rds")
 }
 

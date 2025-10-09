@@ -40,6 +40,7 @@ Install dependencies in R using:
 
 ```r
 install.packages(c("shiny", "shinyjqui", "writexl", "gridExtra", "shinymanager"))
+```
 
 ## Latest Update V0.2.0
 - Adds password protection

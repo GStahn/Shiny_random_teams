@@ -8,8 +8,9 @@ This R Shiny app allows users to create, manage, and randomly assign players to 
 - Random assignment of selected players to a configurable number of teams
 - Drag-and-drop sorting of players within teams using `shinyjqui`
 - Manual editing of teams (add/remove members per team)
-- Export current teams to an `.xlsx` Excel file using `writexl`
+- Export current teams to an `.xlsx` Excel file using `writexl` as well as an `.pdf` file
 - Responsive UI with live updates
+- Password protection using `shinymanager`
 
 ## Use Cases
 
@@ -31,8 +32,18 @@ This app can be helpful for a wide range of scenarios, including:
   - `shiny`
   - `shinyjqui`
   - `writexl`
+  - `gridextra`
+  - `shinymanager`
+
 
 Install dependencies in R using:
 
 ```r
-install.packages(c("shiny", "shinyjqui", "writexl"))
+install.packages(c("shiny", "shinyjqui", "writexl", "gridExtra", "shinymanager"))
+
+## Latest Update V0.2.0
+- Adds password protection
+- No deselect others when someone new joins
+- Displays number of selected names
+- Fixes bad handling via smartphones
+- Option of saving results as a PDF

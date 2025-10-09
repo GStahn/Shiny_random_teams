@@ -34,7 +34,8 @@ This app can be helpful for a wide range of scenarios, including:
   - `writexl`
   - `gridextra`
   - `shinymanager`
-
+ 
+Final app is hosted via [shinyapps.io](https://docs.posit.co/shinyapps.io/guide/)
 
 Install dependencies in R using:
 

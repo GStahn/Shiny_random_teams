@@ -8,7 +8,7 @@
 ## Author: Gerrit Stahn
 ##
 ## Date Created: 2025-05-07
-## Last Update: 2025-05-07
+## Last Update: 2025-10-09
 ##
 ## Copyright (c) Gerrit Stahn, 2025
 ## Email: gerrit.stahn@wiwi.uni-halle.de
@@ -19,11 +19,43 @@
 ## -----------------------------------------------------------------------------
 
 # Install necessary packages if not already installed
-# install.packages(c("shiny", "shinyjqui", "writexl"))
+# install.packages(c("shiny", "shinyjqui", "writexl", "gridExtra", "shinymanager"))
 
 library(shiny)        # For the UI and server structure
-library(shinyjqui)    # For making UI elements sortable via drag and drop
 library(writexl)      # For exporting Excel files
+library(gridExtra)
+library(grid)
+library(shinymanager)
+
+# ------------------ PASSWORD PROTECTION ------------------
+
+### Restrict inactivity ###
+inactivity <- "function idleTimer() {
+var t = setTimeout(logout, 120000);
+window.onmousemove = resetTimer; // catches mouse movements
+window.onmousedown = resetTimer; // catches mouse movements
+window.onclick = resetTimer;     // catches mouse clicks
+window.onscroll = resetTimer;    // catches scrolling
+window.onkeypress = resetTimer;  //catches keyboard actions
+
+function logout() {
+window.close();  //close the window
+}
+
+function resetTimer() {
+clearTimeout(t);
+t = setTimeout(logout, 120000);  // time is in milliseconds (1000 is 1 second)
+}
+}
+idleTimer();"
+
+# data.frame with credentials info
+credentials <- data.frame(
+  user = c("1", "sc261"),
+  password = c("1", "hack"),
+  # comment = c("alsace", "auvergne", "bretagne"), %>% 
+  stringsAsFactors = FALSE
+)
 
 # ------------------ SERVER START ------------------
 
@@ -39,7 +71,8 @@ if (file.exists("spieler.rds")) {
 
 # ------------------ UI DEFINITION ------------------
 
-ui <- fluidPage(
+ui <- secure_app(head_auth = tags$script(inactivity),
+  fluidPage(
   titlePanel("Team Zuteilung mit persistenter Namensliste"),  # Team assignment with persistent name list
   sidebarLayout(
     sidebarPanel(
@@ -50,7 +83,7 @@ ui <- fluidPage(
       selectInput("remove_player", "Namen entfernen:", choices = NULL),  # Remove name
       actionButton("delete_player", "Entfernen"),                       # Remove
       hr(),
-      h4("Auswahl für Teambildung:"),  # Selection for team formation
+      uiOutput("anzahl_h4"),  # Selection for team formation
       checkboxGroupInput("selected_players", label = NULL, choices = spieler_liste, selected = spieler_liste),
       hr(),
       numericInput("num_teams", "Anzahl der Teams:", value = 2, min = 2, max = 6),  # Number of teams
@@ -58,7 +91,8 @@ ui <- fluidPage(
       hr(),
       uiOutput("modify_teams_ui"),   # UI to allow editing teams (dynamic content)
       hr(),
-      downloadButton("download_excel", "Download Excel")  # Download Excel
+      downloadButton("download_excel", "Download Excel"), # Download Excel
+      downloadButton("download_pdf", "Download PDF")
     ),
     mainPanel(
       h3("Teams"),          # Teams
@@ -66,12 +100,17 @@ ui <- fluidPage(
     )
   )
 )
+)
 
 # ------------------ SERVER LOGIC ------------------
 
 server <- function(input, output, session) {
+  
+  result_auth <- secure_server(check_credentials = check_credentials(credentials))
+  
   spieler <- reactiveVal(spieler_liste)  # Reactive player list
   teams <- reactiveVal(list())           # Reactive team list
+  selected <- reactiveVal()
   
   # Add player
   observeEvent(input$add_player, {
@@ -97,6 +136,11 @@ server <- function(input, output, session) {
     updateSelectInput(session, "remove_player", choices = spieler())
   })
   
+  # Count selections
+  output$anzahl_h4 <- renderUI({
+    h4(paste0("Auswahl für Teambildung (", length(input$selected_players), " ausgewählt):"))
+  })
+  
   # Generate random teams
   observeEvent(input$randomize, {
     names <- input$selected_players
@@ -118,20 +162,24 @@ server <- function(input, output, session) {
     teams(team_list)
   })
   
-  # Render team UI (sortable via jQuery)
   output$team_ui <- renderUI({
     req(length(teams()) > 0)
     team_data <- teams()
-    lapply(names(team_data), function(team) {
-      tagList(
-        h4(team),
-        jqui_sortable(
-          div(id = team, class = "team-box", lapply(team_data[[team]], function(name) {
-            div(class = "sortable-item", name)
-          }))
+    
+    fluidRow(
+      lapply(names(team_data), function(team) {
+        column(
+          width = max(12 / length(team_data), 3),  # Dynamische Spaltenbreite
+          style = "padding: 10px; border: 1px solid #ccc; border-radius: 8px; margin: 5px;",
+          h4(team, style = "text-align:center; font-weight:bold;"),
+          tags$ul(
+            lapply(team_data[[team]], function(name) {
+              tags$li(name)
+            })
+          )
         )
-      )
-    })
+      })
+    )
   })
   
   # Render UI for modifying teams (add/remove players)
@@ -145,7 +193,7 @@ server <- function(input, output, session) {
       hr(),
       selectInput("team_select_remove", "Wähle ein Team aus:", choices = names(teams())),  # Choose a team
       selectInput("name_select_remove", "Wähle Namen aus:", choices = NULL),               # Choose name
-      actionButton("remove_name", "Entferne Namen vom Team")                               # Remove name from team
+      actionButton("remove_name", "Entferne Namen vom Team")                              # Remove name from team
     )
   })
   
@@ -183,7 +231,36 @@ server <- function(input, output, session) {
       write_xlsx(team_sheets, path = file)
     }
   )
+  
+  # Export teams to PDF file
+  output$download_pdf <- downloadHandler(
+    filename = function() {
+      paste0("Team_Distribution_", Sys.Date(), ".pdf")
+    },
+    content = function(file) {
+      team_data <- teams()
+      validate(need(length(team_data) > 0, "Keine Teams zum Export vorhanden."))
+      
+      # Data a DataFrame with Teams in columns
+      max_len <- max(sapply(team_data, length))
+      team_table <- do.call(cbind, lapply(team_data, function(x) {
+        c(x, rep("", max_len - length(x)))  # fill up empty rows
+      }))
+      colnames(team_table) <- names(team_data)
+      df <- as.data.frame(team_table, stringsAsFactors = FALSE)
+      
+      # Create PDF 
+      pdf(file, width = 11.69, height = 8.27)  # Landscape format (A4)
+      grid.newpage()
+      grid.text("Team-Zuteilung", y = 0.95, gp = gpar(fontsize = 16, fontface = "bold"))
+      grid.text(paste("Erstellt am:", Sys.Date()), y = 0.92, gp = gpar(fontsize = 10))
+      tableGrob <- gridExtra::tableGrob(df, rows = NULL, theme = gridExtra::ttheme_default(core = list(fg_params = list(cex = 0.9))))
+      grid.draw(tableGrob)
+      dev.off()
+    }
+  )
 }
 
 # Launch the Shiny app
-shinyApp(ui, server)
+shinyApp(ui = ui, server = server)
+

@@ -1,17 +1,11 @@
 # -----------------------------
-
 # Project-specific folders
-
 # -----------------------------
-
 sc_team_app/
 
 # -----------------------------
-
 # R / RStudio files
-
 # -----------------------------
-
 .Rhistory
 .Rapp.history
 .RData
@@ -19,48 +13,33 @@ sc_team_app/
 .Rproj.user/
 
 # -----------------------------
-
 # RStudio project files
-
 # -----------------------------
-
 *.Rproj
 
 # -----------------------------
-
 # Shiny / R temp files
-
 # -----------------------------
-
 shinyapps/
 rsconnect/
 
 # -----------------------------
-
 # Package build files
-
 # -----------------------------
-
 *.tar.gz
 *.Rcheck/
 
 # -----------------------------
-
 # Cache / temporary files
-
 # -----------------------------
-
 cache/
 tmp/
 temp/
 *.log
 
 # -----------------------------
-
 # OS generated files
-
 # -----------------------------
-
 .DS_Store
 Thumbs.db
 

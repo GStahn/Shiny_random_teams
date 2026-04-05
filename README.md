@@ -30,20 +30,85 @@ This app can be helpful for a wide range of scenarios, including:
 - R (>= 4.0)
 - The following R packages:
   - `shiny`
-  - `shinyjqui`
-  - `writexl`
-  - `gridextra`
   - `shinymanager`
+  - `writexl`
+  - `gridExtra`
+  - `grid`
+  - `dplyr`
+  - `bslib`
+
+Optional packages (for cloud storage integration):
+
+  - `googlesheets4`
+  - `googledrive`
  
 Final app is hosted via [shinyapps.io](https://docs.posit.co/shinyapps.io/guide/)
 
 Install dependencies in R using:
 
 ```r
-install.packages(c("shiny", "shinyjqui", "writexl", "gridExtra", "shinymanager"))
+install.packages(c("shiny", "writexl", "gridExtra", "shinymanager",
+  "googlesheets4", "googledrive", "dplyr", "bslib", "bsicons"))
 ```
 
-## Latest Update V0.2.0
+## Lates Update V 0.3.0
+### Version 0.4.0 – 2026-04-05
+
+#### Added
+- Modernized UI using **Bootstrap 5 (`bslib`)** with a custom theme.
+- Custom styling including colors, typography, spacing, and rounded UI components.
+- Logo support on the authentication screen.
+- Captain selection system for team creation.
+- Separate player states for **Present** and **Captain**.
+- Dynamic **Select all / Deselect all** functionality for player availability.
+- Captain reassignment via dropdown menus for each team after team creation.
+- Automatic team rebuilding when captain assignments change.
+- Warning system if captains are not uniquely assigned across teams.
+- Team cards displaying team name and number of members.
+- Additional validation when editing teams.
+- Safeguards preventing:
+  - duplicate team assignments,
+  - manual removal of captains from teams,
+  - deletion of captains from the player list.
+- Improved PDF export including captain labeling `(Captain)`.
+- Compatibility fallback functions to allow the app to run without external storage.
+- Extensive inline documentation regarding storage and deployment options.
+
+#### Changed
+- Application language updated from **German to English**.
+- UI structure reorganized into clearer sections:
+  - player list management
+  - player selection
+  - team creation
+  - team editing
+- Team generation rules now require:
+  - the number of captains to match the number of teams,
+  - at least one captain.
+- Captains are automatically placed as the **first member of each team**.
+- Error handling improved using **modal dialogs** instead of inline messages.
+- Export section appears only when teams exist.
+- Export formatting improved for readability.
+
+#### Storage
+- Removed default persistence via a local `.rds` file.
+- Introduced a temporary **hardcoded player list** for development/testing.
+- Added a fully documented template for **Google Sheets / Google Drive integration**.
+
+#### Export
+- PDF export improved and remains active.
+- Excel export functionality is still present in the code, but commented out.
+
+#### Internal
+- Refactored reactive state management for players, captains, and teams.
+- Added helper functions for:
+  - synchronizing player states,
+  - validating captain assignments,
+  - rebuilding teams,
+  - preparing export data.
+
+---
+
+## Update V 0.2.0
 - Adds password protection
 - No deselect others when someone new joins
 - Displays number of selected names

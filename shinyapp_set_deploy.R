@@ -2,16 +2,15 @@
 ##
 ## Script name: shinyapp_set_deploy
 ##
-## Version: 0.2.0
 ##
 ## Purpose of script: Set Account and deploy app
 ##
 ## Author: Gerrit Stahn
 ##
-## Date Created: 2025-05-07
-## Last Update: 2025-10-09
+## Date Created: 2026-04-04
+## Last Update: 2025-04-04
 ##
-## Copyright (c) Gerrit Stahn, 2025
+## Copyright (c) Gerrit Stahn, 2026
 ## Email: gerrit.stahn@wiwi.uni-halle.de
 ##
 

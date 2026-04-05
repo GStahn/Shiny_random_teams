@@ -2,6 +2,7 @@
 # Project-specific folders
 # -----------------------------
 sc_team_app/
+Archive/
 
 # -----------------------------
 # R / RStudio files
@@ -43,3 +44,7 @@ temp/
 .DS_Store
 Thumbs.db
 
+# -----------------------------
+# shinyapp used for example
+# -----------------------------
+shinyapp_set_deploy_hidden.R

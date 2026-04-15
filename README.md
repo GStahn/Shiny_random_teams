@@ -1,6 +1,6 @@
 # Team Assignment App
 
-This R Shiny app allows users to create, manage, and randomly assign players to teams with a persistent name list saved locally. It includes features for editing teams manually and exporting the team structure to an Excel file.
+This R Shiny app allows users to create, manage, and randomly assign players to teams with a persistent name list saved externally. It includes features for editing teams manually and exporting the team structure.
 
 ## Features
 
@@ -8,7 +8,7 @@ This R Shiny app allows users to create, manage, and randomly assign players to 
 - Random assignment of selected players to a configurable number of teams
 - Drag-and-drop sorting of players within teams using `shinyjqui`
 - Manual editing of teams (add/remove members per team)
-- Export current teams to an `.xlsx` Excel file using `writexl` as well as an `.pdf` file
+- Export current teams to an `.xlsx` Excel file using `writexl` (commented out since V 0.3.0) as well as an `.png` file
 - Responsive UI with live updates
 - Password protection using `shinymanager`
 
@@ -28,7 +28,9 @@ This app can be helpful for a wide range of scenarios, including:
 ## Requirements
 
 - R (>= 4.0)
-- The following R packages:
+
+- The following R packages for shinyapp_set_deploy.R:
+  - `rsconnect`
   - `shiny`
   - `shinymanager`
   - `writexl`
@@ -36,20 +38,24 @@ This app can be helpful for a wide range of scenarios, including:
   - `grid`
   - `dplyr`
   - `bslib`
+  
+- The following R packages for shinyapp_set_deploy.R:
+  - `shiny`
+  - `shinymanager`
+  - `gridExtra`
+  - `grid`
+  - `dplyr`
+  - `bslib`
 
-Optional packages (for cloud storage integration):
+Optional packages for cloud storage integration via Google Drive:
 
   - `googlesheets4`
   - `googledrive`
+
+Optional packages for Excel export: 
+  - `writexl`
  
-Final app is hosted via [shinyapps.io](https://docs.posit.co/shinyapps.io/guide/)
-
-Install dependencies in R using:
-
-```r
-install.packages(c("shiny", "writexl", "gridExtra", "shinymanager",
-  "googlesheets4", "googledrive", "dplyr", "bslib", "bsicons"))
-```
+Example app is hosted via [shinyapps.io](https://docs.posit.co/shinyapps.io/guide/)
 
 ## Lates Update V 0.3.0
 ### Version 0.4.0 – 2026-04-05

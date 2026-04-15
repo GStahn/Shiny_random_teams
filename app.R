@@ -52,7 +52,7 @@
 # ))
 
 library(shiny)
-library(writexl)
+# library(writexl) # Disabled: Excel export commented out
 library(gridExtra)
 library(grid)
 library(shinymanager)

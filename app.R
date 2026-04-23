@@ -2,15 +2,15 @@
 ##
 ## Script name: app.R
 ##
-## Purpose of script: Create a Shiny app that generates teams by randomly drawing
-##                    players from a predefined list.
+## Purpose of script: Create a shiny app, which creates teams by randomly drawing
+##                    players from a (pre)specified list.
 ##
-## Version: 0.3.0
+## Version: 0.4.0
 ##
 ## Author: Gerrit Stahn
 ##
-## Date Created: 2026-04-04
-## Last Update: 2026-04-05
+## Date Created: 2026-04-22
+## Last Update: 2026-04-23
 ##
 ## Copyright (c) Gerrit Stahn, 2026
 ## Email: gerrit.stahn@wiwi.uni-halle.de
@@ -45,28 +45,26 @@
 ## Start
 ## -----------------------------------------------------------------------------
 
-# Install necessary packages if they are not already installed
+# Install necessary packages if not already installed
 # install.packages(c(
 #   "shiny", "writexl", "gridExtra", "shinymanager",
 #   "googlesheets4", "googledrive", "dplyr", "bslib", "bsicons"
 # ))
 
 library(shiny)
-# library(writexl) # Disabled: Excel export commented out
+# library(writexl)
 library(gridExtra)
 library(grid)
 library(shinymanager)
-# library(googledrive)   # Disabled: Google Drive integration commented out
-# library(googlesheets4) # Disabled: Google Sheets integration commented out
+# library(googledrive)
+# library(googlesheets4)
 library(dplyr)
 library(bslib)
 
-# ------------------ PREDEFINED PLAYER LIST ------------------
+# ------------------ DUMMY PLAYER LIST ------------------
 
 # Temporary local player list used for development/testing.
-# IMPORTANT:
-# Delete or replace this section once the app is deployed with external storage.
-# Otherwise, every fresh app start will fall back to this hardcoded list.
+# Replace this with an external data source if needed later.
 player_list <- sort(c(
   "Mark Grayson",
   "Debbie Grayson",
@@ -102,80 +100,22 @@ player_list <- sort(c(
 
 # ------------------ GOOGLE DRIVE / GOOGLE SHEETS SETUP ------------------
 
-# The section below is intentionally commented out.
-# It can be enabled if you want to store the player list in a shared
-# Google Spreadsheet again.
-#
-# HOW TO SET UP SUCH A GOOGLE SHEETS SOLUTION (AS OF APRIL 2026):
-#
-# 1. Create a Google Cloud project
-#    - Go to the Google Cloud Console.
-#    - Create a new project or use an existing one.
-#
-# 2. Enable the required APIs
-#    - Enable the Google Drive API
-#    - Enable the Google Sheets API
-#
-# 3. Create credentials
-#    - Create either OAuth credentials or, in many server setups,
-#      a service account.
-#    - Download the JSON credential file.
-#
-# 4. Store the JSON file securely
-#    - Place the JSON file somewhere outside public app folders if possible.
-#    - In this script, the file path would be passed to gs4_auth() and drive_auth().
-#
-# 5. Create or choose a target Google Drive folder
-#    - In Google Drive, create a folder that should hold the spreadsheet.
-#    - Copy the folder URL and use it as FOLDER_URL.
-#
-# 6. Define spreadsheet and worksheet names
-#    - SHEET_NAME is the file name of the spreadsheet in Google Drive.
-#    - WORKSHEET_NAME is the tab name inside the spreadsheet.
-#
-# 7. Share access correctly
-#    - If you use OAuth with your own Google account, log in once and cache credentials.
-#    - If you use a service account, share the Google Drive folder or spreadsheet
-#      with the service account email address.
-#
-# 8. First app start
-#    - On first run, the script can either find the spreadsheet in the folder
-#      or create it automatically if it does not exist.
-#    - It can also create the worksheet/tab and write an empty Name column.
-#
-# 9. Ongoing use
-#    - The app reads the player names from the sheet at startup.
-#    - Whenever players are added or removed, the app writes the updated list back.
-#
-# WHY THIS IS USEFUL:
-# - the player list survives app restarts
-# - multiple users can work with the same source
-# - no separate database is required
-# - data management remains simple and transparent
-#
-# POTENTIAL DRAWBACKS:
-# - requires Google authentication
-# - app deployment becomes slightly more complex
-# - external API availability is required
-# - permissions must be configured correctly
-
-# FOLDER_URL <- "[YOUR FOLDER URL]"
-# SHEET_NAME <- "[YOUR SHEET NAME]"
-# WORKSHEET_NAME <- "[YOUR WORKSHEET NAME]"
+# FOLDER_URL <- "https://drive.google.com/drive/folders/[YOUR_FOLDER_ID]"
+# SHEET_NAME <- "player_list_team_app"
+# WORKSHEET_NAME <- "Players"
 
 # Store OAuth cache locally
 # options(gargle_oauth_cache = ".secrets")
 
-# On first launch, authentication is done via browser login
-# gs4_auth(path = "[YOUR JSON FILE NAME].json")
-# drive_auth(path = "[YOUR JSON FILE NAME].json")
+# Browser login on first start
+# gs4_auth(path = "[YOUR_JSON_FILE].json")
+# drive_auth(path = "[YOUR_JSON_FILE].json")
 
 # Helper function: find spreadsheet in target folder or create a new one
 # get_or_create_player_sheet <- function(folder_url, sheet_name, worksheet_name = "Players") {
 #   
 #   folder_id <- as_id(folder_url)
 #   
-#   # List all spreadsheet files in the target folder
 #   files_in_folder <- drive_ls(
 #     path = folder_id,
 #     type = "spreadsheet"
@@ -187,7 +127,6 @@ player_list <- sort(c(
 #   if (nrow(existing_sheet) > 0) {
 #     ss <- as_sheets_id(existing_sheet$id[[1]])
 #     
-#     # Check whether the requested worksheet already exists
 #     existing_tabs <- sheet_names(ss)
 #     if (!(worksheet_name %in% existing_tabs)) {
 #       sheet_add(ss, sheet = worksheet_name)
@@ -201,7 +140,6 @@ player_list <- sort(c(
 #     return(ss)
 #   }
 #   
-#   # Create a new spreadsheet inside the target folder
 #   new_file <- drive_create(
 #     name = sheet_name,
 #     path = folder_id,
@@ -209,12 +147,9 @@ player_list <- sort(c(
 #   )
 #   
 #   ss <- as_sheets_id(new_file$id[[1]])
-#   
-#   # Rename default worksheet or write initial data
 #   existing_tabs <- sheet_names(ss)
 #   
 #   if (length(existing_tabs) > 0) {
-#     # Rename default sheet if needed
 #     if (existing_tabs[1] != worksheet_name) {
 #       sheet_rename(ss, sheet = existing_tabs[1], new_name = worksheet_name)
 #     }
@@ -222,7 +157,6 @@ player_list <- sort(c(
 #     sheet_add(ss, sheet = worksheet_name)
 #   }
 #   
-#   # Write empty initial table
 #   sheet_write(
 #     data.frame(Name = character(), stringsAsFactors = FALSE),
 #     ss = ss,
@@ -252,7 +186,7 @@ player_list <- sort(c(
 #   sort(unique(players))
 # }
 
-# Helper function: write full player list to Google Sheet
+# Helper function: write player list back to Google Sheet
 # write_players_to_sheet <- function(players, ss, worksheet_name = "Players") {
 #   df <- data.frame(
 #     Name = sort(unique(players)),
@@ -269,27 +203,23 @@ player_list <- sort(c(
 #   worksheet_name = WORKSHEET_NAME
 # )
 
-# Load player list initially from Google Sheet
+# Load player list initially from spreadsheet
 # player_list <- read_players_from_sheet(
 #   ss = player_sheet,
 #   worksheet_name = WORKSHEET_NAME
 # )
 
-# Compatibility helper:
-# In the current app version, write_players_to_sheet(...) may still be called
-# in the server logic. This fallback function avoids errors while the Google
-# Sheets integration is disabled.
+# Compatibility helper while Google Sheets is disabled
 write_players_to_sheet <- function(players, ss = NULL, worksheet_name = NULL) {
   invisible(NULL)
 }
 
-# Optional placeholders so old references do not break the app
 player_sheet <- NULL
 WORKSHEET_NAME <- NULL
 
 # ------------------ PASSWORD PROTECTION ------------------
 
-# Auto-logout after inactivity
+### Restrict inactivity ###
 inactivity <- "function idleTimer() {
 var t = setTimeout(logout, 120000);
 window.onmousemove = resetTimer;
@@ -304,37 +234,289 @@ window.close();
 
 function resetTimer() {
 clearTimeout(t);
-t = setTimeout(logout, 120000);
+t = setTimeout(logout, 600000);
 }
 }
 idleTimer();"
 
-# Define usernames and passwords
+# data.frame with credentials info
 credentials <- data.frame(
-  user = c("1", "hello", "bye"),
-  password = c("1", "world", "world"),
+  user = c("admin", "guest"),
+  password = c("change_me_1", "change_me_2"),
   stringsAsFactors = FALSE
 )
 
 # ------------------ UI DEFINITION ------------------
 
 css <- "
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
 .app-title {
   margin-bottom: 20px;
 }
+
+.well,
+.sidebar,
+aside,
+.col-sm-4 {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.well {
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.sidebar-panel-custom {
+  padding-right: 8px;
+}
+
 .sidebar-section {
   margin-bottom: 20px;
+  background: #FFFFFF;
+  border: 1px solid #E3E7EB;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
 }
-/* Footer */
+
+.section-header {
+  background: #F5F8FB;
+  border-bottom: 1px solid #E3E7EB;
+  padding: 12px 16px;
+  font-weight: 700;
+  color: #205585;
+  font-size: 1rem;
+}
+
+.section-body {
+  padding: 16px;
+}
+
+.section-divider {
+  height: 1px;
+  background: #E9ECEF;
+  margin: 14px 0;
+  border: none;
+}
+
+.team-card {
+  background: #FFFFFF;
+  border: 1px solid #E3E7EB;
+  border-top: 4px solid #205585;
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.warning-box {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-left: 4px solid #E1BD4E;
+  background: #FFF8E1;
+  border-radius: 10px;
+}
+
+.export-section {
+  margin-bottom: 20px;
+  background: #FFFFFF;
+  border: 1px solid #E3E7EB;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+}
+
+.export-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.center-button-wrap {
+  text-align: center;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+.center-button-wrap .btn {
+  min-width: 220px;
+}
+
+.main-panel-custom {
+  min-height: 100%;
+}
+
 .app-footer {
   margin-top: 40px;
   text-align: center;
   font-size: 0.75rem;
   color: #666;
 }
+
+@media (max-width: 768px) {
+  .container-fluid {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .section-body {
+    padding: 14px;
+  }
+
+  .btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .export-buttons {
+    display: block;
+  }
+}
+
+.modal-content {
+  border-radius: 16px;
+  border: none;
+}
+
+.modal-header {
+  border-bottom: 1px solid #E3E7EB;
+}
+
+.modal-footer {
+  border-top: 1px solid #E3EEB;
+}
+
+/* ---------- Login Help Overlay ---------- */
+.login-help-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-help-modal {
+  width: 100%;
+  max-width: 850px;
+  max-height: 85vh;
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.20);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #E3E7EB;
+  background: #FFFFFF;
+}
+
+.login-help-close {
+  border: none;
+  background: transparent;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: #205585;
+  cursor: pointer;
+}
+
+.login-help-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  background: #FAFBFC;
+}
+
+.login-help-footer {
+  padding: 14px 20px;
+  border-top: 1px solid #E3E7EB;
+  background: #FFFFFF;
+  text-align: right;
+}
+
+.help-intro-box {
+  background: #F5F8FB;
+  border: 1px solid #E3E7EB;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.help-section {
+  margin-bottom: 18px;
+}
+
+.help-section-title {
+  font-weight: 700;
+  color: #205585;
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+.help-section-body {
+  background: #FFFFFF;
+  border: 1px solid #E3E7EB;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.help-section-body ul {
+  margin-bottom: 0;
+  padding-left: 20px;
+}
+
+.help-section-body p {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .login-help-modal {
+    max-height: 90vh;
+  }
+  
+  .login-help-header,
+  .login-help-body,
+  .login-help-footer {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+.login-help-body {
+  text-align: left !important;
+}
+
+.help-section-body {
+  text-align: left !important;
+}
+
+.help-intro-box {
+  text-align: left !important;
+}
+
+.login-top-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
 "
 
-# Custom Bootstrap theme
 theme_custom <- bs_theme(
   version = 5,
   
@@ -394,88 +576,328 @@ theme_custom <- bs_theme(
   "input-focus-box-shadow" = "0 0 0 0.2rem rgba(32, 85, 133, 0.25)"
 )
 
-ui <- fluidPage(
-  theme = theme_custom,
-  style = "padding-top:30px; padding-bottom:18px;",
-  
-  sidebarLayout(
-    
-    sidebarPanel(
-      
-      div(
-        class = "sidebar-section",
-        h4("Manage player list"),
-        textInput("new_player", "Add new name:"),
-        actionButton("add_player", "Add"),
-        div(class = "section-divider"),
-        selectInput("remove_player", "Remove name:", choices = NULL),
-        actionButton("delete_player", "Remove")
-      ),
-      
-      div(style = "margin-top:30px;"),
-      
-      div(
-        class = "sidebar-section",
-        uiOutput("selection_h4"),
-        uiOutput("player_selection_ui"),
-        div(style = "margin-top:12px;"),
-        uiOutput("select_all_button")
-      ),
-      
-      div(style = "margin-top:30px;"),
-      
-      div(
-        class = "sidebar-section",
-        h4("Team creation"),
-        numericInput("num_teams", "Number of teams:", value = 2, min = 2, max = 6),
-        actionButton("randomize", "Randomize teams")
-      ),
-      
-      div(style = "margin-top:30px;"),
-      
-      div(
-        class = "sidebar-section",
-        uiOutput("modify_teams_ui")
+# ------------------ APP UI CORE ------------------
+
+# ------------------ SHARED HELP CONTENT ------------------
+
+help_section_ui <- function(title, icon, items) {
+  div(
+    class = "help-section",
+    div(class = "help-section-title", paste0(icon, " ", title)),
+    div(
+      class = "help-section-body",
+      tags$ul(
+        lapply(items, tags$li)
       )
-      
+    )
+  )
+}
+
+help_intro_ui <- function() {
+  div(
+    class = "help-intro-box",
+    tags$h4(style = "margin-top:0; color:#205585;", "🎯 Purpose of the app"),
+    tags$p(
+      style = "margin-bottom:0;",
+      "This app supports the quick creation of random teams. ",
+      "Players can be selected and managed, captains can be defined, ",
+      "teams can be generated automatically, adjusted manually if needed, ",
+      "and then exported."
+    )
+  )
+}
+
+help_content_ui <- function(include_feedback = FALSE) {
+  tagList(
+    help_intro_ui(),
+    
+    help_section_ui(
+      "Security & notes",
+      "🔐",
+      list(
+        "The app is password protected and only accessible to authorized users.",
+        "After inactivity, an automatic logout is triggered to prevent unauthorized access.",
+        "The player list currently uses a local dummy list for testing and demonstration purposes.",
+        HTML('If you have any questions or issues, please send an email to <a href="mailto:contact@example.com" target="_blank">contact@example.com</a>.')
+      )
     ),
     
-    mainPanel(
-      h3(style = "color:#205585; font-weight:700;", "Teams"),
-      uiOutput("team_ui"),
-      uiOutput("captain_warning_ui"),
-      uiOutput("download_ui")
-    ) )
+    help_section_ui(
+      "Select players for team creation",
+      "👥",
+      list(
+        "Use the overview to mark present players for the current team creation.",
+        "Additionally, the captain role can be activated for individual people.",
+        "Captains are automatically treated as selected and do not need to be marked separately as present.",
+        "The bulk action can be used to select or deselect all available players at once."
+      )
+    ),
+    
+    help_section_ui(
+      "Manage player list",
+      "➕",
+      list(
+        "New names can be added permanently to the central player list.",
+        "Names that are no longer needed can be removed from the list.",
+        "People currently set as captains cannot be deleted in order to protect the team logic."
+      )
+    ),
+    
+    help_section_ui(
+      "Create random teams",
+      "🎲",
+      list(
+        "Before creating teams, define the desired number of teams.",
+        "The number of teams must exactly match the number of selected captains.",
+        "When generating teams, the selected players are randomly distributed across the teams.",
+        "The captains are assigned automatically and placed in the first position of each team."
+      )
+    ),
+    
+    help_section_ui(
+      "Display and check teams",
+      "📋",
+      list(
+        "After creation, all teams are displayed clearly together with team size.",
+        "For each team, the captain selection can be checked or adjusted via a dropdown.",
+        "If captains are not uniquely distributed across the teams, a warning message appears."
+      )
+    ),
+    
+    help_section_ui(
+      "Edit teams manually",
+      "✏️",
+      list(
+        "Additional names can be added manually to an existing team.",
+        "Unneeded team members can be removed again from a team.",
+        "Captains cannot be removed manually so that the team structure remains intact.",
+        "Duplicate assignments are prevented, so one person cannot appear in multiple teams at the same time."
+      )
+    ),
+    
+    help_section_ui(
+      "Export results",
+      "📤",
+      list(
+        # "The final team distribution can be exported as an Excel file.",
+        "A PDF export is available for easy sharing or printing.",
+        "Captains are clearly marked in the export."
+      )
+    ),
+    
+    if (include_feedback) {
+      help_section_ui(
+        "Feedback",
+        "⚠️",
+        list(
+          HTML(
+            paste0(
+              '<a href="mailto:kixxntrixx@web.de',
+              '?subject=How much is the fish?',
+              '&body=Hello,%0D%0A%0D%0A',
+              'I want to donate 1000EUR to you. What is your IBAN?%0D%0A%0D%0A">',
+              'Send feedback',
+              '</a>'
+            )
+          )
+        )
+      )
+    }
+  )
+}
+
+app_ui <- fluidPage(
+  theme = theme_custom,
   
-  # You can add a feedback button: Just uncomment and delete the second ")" after 
-  # mainPanel
-  # ),
-  # div(
-  #   class = "app-footer",
-  #   tags$a(
-  #     href = paste0(
-  #       "mailto:[YOUR Mail]",
-  #       "?subject=Feedback on Team App",
-  #       "&body=Hello [YOUR NAME],%0D%0A%0D%0A",
-  #       "I have the following feedback on the Team App:%0D%0A%0D%0A"
-  #     ),
-  #     class = "btn btn-link btn-sm",
-  #     "Send feedback"
-  #   )
-  # )
+  tags$head(
+    tags$style(HTML(css)),
+    tags$script(HTML(inactivity)),
+    tags$script(HTML("
+  Shiny.addCustomMessageHandler('scrollToTeams', function(message) {
+    var el = document.getElementById('teams_section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+"))
+  ),
+  
+  div(
+    style = "max-width: 1100px; margin: 0 auto;",
+    
+    div(
+      class = "app-title",
+      
+      fluidRow(
+        column(
+          width = 8,
+          h1("Team App", style = "color:#205585; font-weight:700; margin-bottom:6px;"),
+          p(
+            style = "color:#5F6B7A; margin-bottom:0;",
+            "Manage players, define captains, and create random teams."
+          )
+        ),
+        
+        column(
+          width = 4,
+          align = "right",
+          div(
+            style = "margin-top:10px;",
+            actionButton(
+              "show_help",
+              label = "Help",
+              icon = icon("circle-info"),
+              class = "btn btn-primary btn-sm"
+            )
+          )
+        )
+      )
+    ),
+    
+    # 1) Player list for team creation
+    div(
+      class = "sidebar-section",
+      div(class = "section-header", "👥 Player list"),
+      div(
+        class = "section-body",
+        uiOutput("selection_h4"),
+        uiOutput("select_all_button"),
+        div(style = "margin-top:15px;"),
+        uiOutput("player_selection_ui")
+      )
+    ),
+    
+    # 2) Manage player list
+    div(
+      class = "sidebar-section",
+      div(class = "section-header", "➕ Manage player list"),
+      div(
+        class = "section-body",
+        textInput("new_player", "Enter new name:", placeholder = "e.g. Alex Example"),
+        actionButton("add_player", "Add player permanently", class = "btn btn-primary"),
+        
+        div(class = "section-divider"),
+        
+        selectInput("remove_player", "Select player:", choices = NULL),
+        actionButton("delete_player", "Remove player permanently", class = "btn btn-outline-danger")
+      )
+    ),
+    
+    # 3) Random teams
+    div(
+      class = "sidebar-section",
+      style = "
+        background: linear-gradient(135deg, #205585 0%, #163B5C 100%);
+        border: none;
+        box-shadow: 0 8px 20px rgba(32, 85, 133, 0.18);
+      ",
+      div(
+        class = "section-header",
+        style = "
+          background: transparent;
+          border-bottom: 1px solid rgba(255,255,255,0.15);
+          color: #FFFFFF;
+        ",
+        "🎲 Random teams"
+      ),
+      div(
+        class = "section-body",
+        style = "color:#FFFFFF;",
+        
+        numericInput(
+          "num_teams",
+          "Number of teams:",
+          value = 3,
+          min = 1,
+          step = 1,
+          width = "100%"
+        ),
+        
+        tags$p(
+          style = "font-size:0.9rem; color:rgba(255,255,255,0.85); margin-top:10px;",
+          "The number of teams must match the number of selected captains."
+        ),
+        
+        actionButton(
+          "randomize",
+          "Generate teams",
+          class = "btn btn-warning",
+          style = "font-weight:700; width:100%; margin-top:8px;"
+        )
+      )
+    ),
+    
+    # Additional content appears only after first team creation
+    uiOutput("main_content_ui")
+  )
 )
 
+# ------------------ SECURE APP WRAPPER ------------------
+
 ui <- secure_app(
-  ui,
+  app_ui,
   theme = theme_custom,
   tags_top = tags$div(
-    tags$head(tags$style(css)),
+    class = "login-top-content",
+    
+    tags$head(
+      tags$style(css)
+    ),
+    
     tags$img(
-      src = "https://www.sc261.de/images/layout/SC261.svg", # add an url for your own image here
+      src = "https://www.sc261.de/images/layout/SC261.svg",
       width = 200,
       height = 200,
-      alt = "Logo not found",
-      deleteFile = FALSE
+      alt = "Logo not found"
+    ),
+    
+    div(
+      style = "margin-top:12px;",
+      tags$button(
+        type = "button",
+        class = "btn btn-outline-primary btn-sm",
+        onclick = "document.getElementById('loginHelpOverlay').style.display='flex';",
+        "Help"
+      )
+    ),
+    
+    div(
+      id = "loginHelpOverlay",
+      class = "login-help-overlay",
+      style = "display:none;",
+      
+      div(
+        class = "login-help-modal",
+        
+        div(
+          class = "login-help-header",
+          tags$div(
+            style = "font-weight:700; color:#205585; font-size:1.2rem;",
+            "Help for the Team App"
+          ),
+          tags$button(
+            type = "button",
+            class = "login-help-close",
+            onclick = "document.getElementById('loginHelpOverlay').style.display='none';",
+            HTML("&times;")
+          )
+        ),
+        
+        div(
+          class = "login-help-body",
+          help_content_ui(include_feedback = FALSE)
+        ),
+        
+        div(
+          class = "login-help-footer",
+          tags$button(
+            type = "button",
+            class = "btn btn-secondary btn-sm",
+            onclick = "document.getElementById('loginHelpOverlay').style.display='none';",
+            "Close"
+          )
+        )
+      )
     )
   )
 )
@@ -484,26 +906,40 @@ ui <- secure_app(
 
 server <- function(input, output, session) {
   
-  # User authentication
-  auth_result <- secure_server(
+  result_auth <- secure_server(
     check_credentials = check_credentials(credentials)
   )
   
-  # Main reactive app state
   players <- reactiveVal(sort(player_list))
   teams <- reactiveVal(list())
-  selected_captains <- reactiveVal(character(0))
+  captains_selected <- reactiveVal(character(0))
   captain_warning <- reactiveVal(NULL)
   
-  selected_players_state <- reactiveVal(
-    setNames(rep(FALSE, length(player_list)), player_list)
-  )
-  captain_state <- reactiveVal(
-    setNames(rep(FALSE, length(player_list)), player_list)
-  )
+  show_help_modal <- function() {
+    modalDialog(
+      title = div(style = "font-weight:700; color:#205585;", "Help for the Team App"),
+      size = "l",
+      easyClose = TRUE,
+      footer = modalButton("Close"),
+      
+      tags$div(
+        style = "max-height:70vh; overflow-y:auto;",
+        div(
+          style = "padding: 4px 2px;",
+          help_content_ui(include_feedback = TRUE)
+        )
+      )
+    )
+  }
   
-  # Helper function:
-  # Keep player selection state aligned with the current player list
+  observeEvent(input$show_help, {
+    showModal(show_help_modal())
+  })
+  
+  selected_players_state <- reactiveVal(setNames(rep(FALSE, length(player_list)), player_list))
+  captain_state <- reactiveVal(setNames(rep(FALSE, length(player_list)), player_list))
+  
+  # Helper function: align selection states with current player list
   sync_states <- function(current_players) {
     old_selected <- selected_players_state()
     old_captains <- captain_state()
@@ -521,14 +957,13 @@ server <- function(input, output, session) {
       new_captains[common_captains] <- old_captains[common_captains]
     }
     
-    # Players marked as captains should not also be marked as regular selected players
     new_selected[new_captains] <- FALSE
     
     selected_players_state(new_selected)
     captain_state(new_captains)
   }
   
-  # Check whether captain assignments are still valid
+  # Check warning status
   update_captain_warning <- function() {
     if (length(teams()) == 0) {
       captain_warning(NULL)
@@ -536,14 +971,14 @@ server <- function(input, output, session) {
     }
     
     team_data <- teams()
-    available_captains <- selected_captains()
+    available_captains <- captains_selected()
     
     selected_dropdown_captains <- sapply(seq_along(team_data), function(i) {
-      value <- input[[paste0("captain_team_", i)]]
-      if (is.null(value) || identical(value, "")) {
+      val <- input[[paste0("captain_team_", i)]]
+      if (is.null(val) || identical(val, "")) {
         if (length(team_data[[i]]) > 0) team_data[[i]][1] else ""
       } else {
-        value
+        val
       }
     }, USE.NAMES = FALSE)
     
@@ -565,27 +1000,27 @@ server <- function(input, output, session) {
     captain_warning(NULL)
   }
   
-  # Rebuild teams after manual captain reassignment in the dropdowns
+  # Rebuild teams internally after manual captain reassignment
   rebuild_teams_with_selected_captains <- function() {
     req(length(teams()) > 0)
     
     current_teams <- teams()
-    available_captains <- selected_captains()
+    available_captains <- captains_selected()
     
     if (length(available_captains) == 0) {
       return()
     }
     
-    non_captain_members <- lapply(current_teams, function(team_vector) {
-      setdiff(team_vector, available_captains)
+    non_captain_members <- lapply(current_teams, function(team_vec) {
+      setdiff(team_vec, available_captains)
     })
     
     selected_dropdown_captains <- sapply(seq_along(current_teams), function(i) {
-      value <- input[[paste0("captain_team_", i)]]
-      if (is.null(value) || identical(value, "")) {
+      val <- input[[paste0("captain_team_", i)]]
+      if (is.null(val) || identical(val, "")) {
         if (length(current_teams[[i]]) > 0) current_teams[[i]][1] else ""
       } else {
-        value
+        val
       }
     }, USE.NAMES = FALSE)
     
@@ -604,14 +1039,13 @@ server <- function(input, output, session) {
     teams(rebuilt_teams)
   }
   
-  # Get current captains from the first position of each team
   get_current_captains_for_export <- function() {
     if (length(teams()) == 0) {
       return(character(0))
     }
     
-    sapply(teams(), function(team_vector) {
-      if (length(team_vector) > 0) team_vector[1] else ""
+    sapply(teams(), function(team_vec) {
+      if (length(team_vec) > 0) team_vec[1] else ""
     }, USE.NAMES = FALSE)
   }
   
@@ -637,7 +1071,7 @@ server <- function(input, output, session) {
     
     player_to_delete <- input$remove_player
     
-    if (player_to_delete %in% selected_captains()) {
+    if (player_to_delete %in% captains_selected()) {
       showModal(
         modalDialog(
           title = "Error",
@@ -671,7 +1105,7 @@ server <- function(input, output, session) {
     )
   })
   
-  # ------------------ PLAYER SELECTION + CAPTAIN SELECTION ------------------
+  # ------------------ LEFT SIDE: TEAM CREATION + CAPTAIN ------------------
   
   output$selection_h4 <- renderUI({
     selected_count <- sum(selected_players_state(), na.rm = TRUE) +
@@ -683,7 +1117,7 @@ server <- function(input, output, session) {
   output$player_selection_ui <- renderUI({
     current_players <- players()
     selected_state <- selected_players_state()
-    captain_values <- captain_state()
+    captain_vals <- captain_state()
     
     tagList(
       fluidRow(
@@ -698,7 +1132,7 @@ server <- function(input, output, session) {
           column(6, tags$div(style = "padding-top:6px;", player)),
           column(
             3, align = "center",
-            if (!isTRUE(captain_values[player])) {
+            if (!isTRUE(captain_vals[player])) {
               checkboxInput(
                 inputId = paste0("select_player_", make.names(player)),
                 label = NULL,
@@ -713,7 +1147,7 @@ server <- function(input, output, session) {
             checkboxInput(
               inputId = paste0("captain_player_", make.names(player)),
               label = NULL,
-              value = isTRUE(captain_values[player])
+              value = isTRUE(captain_vals[player])
             )
           )
         )
@@ -721,22 +1155,21 @@ server <- function(input, output, session) {
     )
   })
   
-  # Create dynamic observers for all player checkboxes
   observe({
     lapply(players(), function(player) {
       local({
-        current_player <- player
-        safe_name <- make.names(current_player)
+        p <- player
+        safe_name <- make.names(p)
         
         observeEvent(input[[paste0("captain_player_", safe_name)]], {
           current_captains <- captain_state()
           current_selected <- selected_players_state()
           
           is_captain_now <- isTRUE(input[[paste0("captain_player_", safe_name)]])
-          current_captains[current_player] <- is_captain_now
+          current_captains[p] <- is_captain_now
           
           if (is_captain_now) {
-            current_selected[current_player] <- TRUE
+            current_selected[p] <- TRUE
           }
           
           captain_state(current_captains)
@@ -746,8 +1179,8 @@ server <- function(input, output, session) {
         observeEvent(input[[paste0("select_player_", safe_name)]], {
           current_selected <- selected_players_state()
           
-          if (!isTRUE(captain_state()[current_player])) {
-            current_selected[current_player] <- isTRUE(input[[paste0("select_player_", safe_name)]])
+          if (!isTRUE(captain_state()[p])) {
+            current_selected[p] <- isTRUE(input[[paste0("select_player_", safe_name)]])
             selected_players_state(current_selected)
           }
         }, ignoreInit = TRUE)
@@ -771,10 +1204,56 @@ server <- function(input, output, session) {
     label <- if (all_active) {
       "Deselect all"
     } else {
-      "Mark all as present"
+      "Set all to present"
     }
     
-    actionButton("select_all_present", label)
+    div(
+      class = "center-button-wrap",
+      actionButton("select_all_present", label)
+    )
+  })
+  
+  output$main_content_ui <- renderUI({
+    req(length(teams()) > 0)
+    
+    tagList(
+      # Teams
+      div(
+        id = "teams_section",
+        class = "sidebar-section",
+        div(class = "section-header", "📋 Teams"),
+        div(
+          class = "section-body",
+          uiOutput("team_ui"),
+          uiOutput("captain_warning_ui")
+        )
+      ),
+      
+      # Edit teams
+      div(
+        class = "sidebar-section",
+        div(class = "section-header", "✏️ Edit teams"),
+        div(
+          class = "section-body",
+          uiOutput("modify_teams_ui")
+        )
+      ),
+      
+      # Export
+      div(
+        class = "export-section",
+        div(class = "section-header", "📤 Export"),
+        div(
+          class = "section-body",
+          uiOutput("download_ui")
+        )
+      ),
+      
+      div(
+        class = "app-footer",
+        HTML("&copy; Team App")
+      )
+    )
   })
   
   observeEvent(input$select_all_present, {
@@ -792,6 +1271,7 @@ server <- function(input, output, session) {
     all_active <- all_non_captains_selected && all_captains_selected
     
     if (all_active) {
+      
       new_selected <- setNames(rep(FALSE, length(current_players)), current_players)
       new_captains <- setNames(rep(FALSE, length(current_players)), current_players)
       
@@ -799,20 +1279,17 @@ server <- function(input, output, session) {
       captain_state(new_captains)
       
       lapply(current_players, function(player) {
-        updateCheckboxInput(
-          session,
-          paste0("captain_player_", make.names(player)),
-          value = FALSE
-        )
+        updateCheckboxInput(session,
+                            paste0("captain_player_", make.names(player)),
+                            value = FALSE)
         
-        updateCheckboxInput(
-          session,
-          paste0("select_player_", make.names(player)),
-          value = FALSE
-        )
+        updateCheckboxInput(session,
+                            paste0("select_player_", make.names(player)),
+                            value = FALSE)
       })
       
     } else {
+      
       new_selected <- setNames(rep(TRUE, length(current_players)), current_players)
       new_selected[current_captains] <- FALSE
       
@@ -820,11 +1297,9 @@ server <- function(input, output, session) {
       
       lapply(current_players, function(player) {
         if (!isTRUE(current_captains[player])) {
-          updateCheckboxInput(
-            session,
-            paste0("select_player_", make.names(player)),
-            value = TRUE
-          )
+          updateCheckboxInput(session,
+                              paste0("select_player_", make.names(player)),
+                              value = TRUE)
         }
       })
     }
@@ -852,10 +1327,8 @@ server <- function(input, output, session) {
     req(length(teams()) > 0)
     
     div(
-      class = "download-box",
-      h4(style = "color:#205585; font-weight:700;", "Export"),
+      class = "export-buttons",
       # downloadButton("download_excel", "Download Excel"),
-      # tags$span(" "),
       downloadButton("download_pdf", "Download PDF")
     )
   })
@@ -864,10 +1337,10 @@ server <- function(input, output, session) {
   
   observeEvent(input$randomize, {
     selected_state <- selected_players_state()
-    captain_values <- captain_state()
+    captain_vals <- captain_state()
     
     random_players <- names(selected_state[selected_state])
-    captains <- names(captain_values[captain_values])
+    captains <- names(captain_vals[captain_vals])
     num_teams <- input$num_teams
     num_captains <- length(captains)
     
@@ -902,10 +1375,7 @@ server <- function(input, output, session) {
     shuffled_names <- sample(random_players)
     
     if (length(shuffled_names) > 0) {
-      split_teams <- split(
-        shuffled_names,
-        rep(1:num_teams, length.out = length(shuffled_names))
-      )
+      split_teams <- split(shuffled_names, rep(1:num_teams, length.out = length(shuffled_names)))
     } else {
       split_teams <- vector("list", num_teams)
       names(split_teams) <- as.character(1:num_teams)
@@ -923,27 +1393,28 @@ server <- function(input, output, session) {
       }
     }
     
-    # Place one captain at the beginning of each team
     for (i in seq_len(num_teams)) {
       full_teams[[i]] <- c(captains[i], full_teams[[i]])
     }
     
     team_list <- setNames(full_teams, paste0("Team ", seq_len(num_teams)))
     teams(team_list)
-    selected_captains(captains)
+    captains_selected(captains)
     captain_warning(NULL)
-  })
+    session$sendCustomMessage("scrollToTeams", list())
+  }
+  )
   
   # ------------------ TEAM OUTPUT ------------------
   
   output$team_ui <- renderUI({
     req(length(teams()) > 0)
     team_data <- teams()
-    available_captains <- selected_captains()
+    available_captains <- captains_selected()
     
     fluidRow(
       lapply(seq_along(team_data), function(i) {
-        team_name <- names(team_data)[i]
+        team <- names(team_data)[i]
         current_team <- team_data[[i]]
         
         current_dropdown_value <- input[[paste0("captain_team_", i)]]
@@ -957,24 +1428,27 @@ server <- function(input, output, session) {
         
         team_members_without_captain <- setdiff(current_team, available_captains)
         
-        column(
-          width = max(12 / length(team_data), 3),
+        div(
+          class = "col-12 col-md-6 col-lg-4",
           div(
             class = "team-card",
+            
             h4(
               paste0(
-                team_name, " - ",
-                length(team_data[[team_name]]), " ",
-                ifelse(length(team_data[[team_name]]) == 1, "person", "people")
+                team, " – ",
+                length(team_data[[team]]), " ",
+                ifelse(length(team_data[[team]]) == 1, "person", "people")
               ),
               style = "text-align:center; font-weight:bold; color:#205585;"
             ),
+            
             selectInput(
               inputId = paste0("captain_team_", i),
               label = "Captain:",
               choices = available_captains,
               selected = current_captain
             ),
+            
             tags$ul(
               lapply(team_members_without_captain, function(name) {
                 tags$li(name)
@@ -986,7 +1460,7 @@ server <- function(input, output, session) {
     )
   })
   
-  # Rebuild teams if captain dropdown selection changes
+  # Dropdown change should update teams internally
   observe({
     req(length(teams()) > 0)
     
@@ -1008,7 +1482,6 @@ server <- function(input, output, session) {
     req(length(teams()) > 0)
     
     tagList(
-      h4("Edit teams"),
       textInput("new_name", "Add name:", ""),
       selectInput("team_select_add", "Choose a team:", choices = names(teams())),
       actionButton("add_name", "Add name to team"),
@@ -1022,7 +1495,7 @@ server <- function(input, output, session) {
   observe({
     req(input$team_select_remove)
     team_data <- teams()
-    available_captains <- selected_captains()
+    available_captains <- captains_selected()
     team_players <- team_data[[input$team_select_remove]]
     
     removable_players <- setdiff(team_players, available_captains)
@@ -1081,14 +1554,14 @@ server <- function(input, output, session) {
     current_teams <- teams()
     team_name <- input$team_select_remove
     player_to_remove <- input$name_select_remove
-    available_captains <- selected_captains()
+    available_captains <- captains_selected()
     
     if (player_to_remove %in% available_captains) {
       showModal(
         modalDialog(
           title = "Error",
-          "Error: A captain cannot be removed manually from a team."
-          , easyClose = TRUE,
+          "Error: A captain cannot be removed manually from the team.",
+          easyClose = TRUE,
           footer = modalButton("Close")
         )
       )
@@ -1116,7 +1589,6 @@ server <- function(input, output, session) {
   
   # ------------------ EXPORT ------------------
   
-  # Excel export can be added ()just uncomment
   # output$download_excel <- downloadHandler(
   #   filename = function() {
   #     paste0("Team_Distribution_", Sys.Date(), ".xlsx")
@@ -1224,4 +1696,3 @@ server <- function(input, output, session) {
 
 # Launch the Shiny app
 shinyApp(ui = ui, server = server)
-

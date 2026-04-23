@@ -1,122 +1,188 @@
 # Team Assignment App
 
-This R Shiny app allows users to create, manage, and randomly assign players to teams with a persistent name list saved externally. It includes features for editing teams manually and exporting the team structure.
+This R Shiny app allows users to manage a player list, define captains, and randomly generate teams in a modern, password-protected interface. Teams can be adjusted manually after creation and exported as a PDF. The current local development version uses a predefined player list, while optional cloud storage via Google Sheets / Google Drive is prepared in the code.
 
 ## Features
 
-- Add and remove players to/from a persistent list (saved via RDS file)
+- Password-protected access using `shinymanager`
+- Modern responsive UI based on **Bootstrap 5** via `bslib`
+- Custom theme with improved styling, cards, section layouts, and mobile-friendly behavior
+- Help system:
+  - help button on the login screen
+  - help button inside the app
+  - structured in-app guidance for all major functions
+- Add and remove players from the player list
+- Select players as **present**
+- Define specific players as **captains**
+- Bulk action to **set all players as present** or **deselect all**
 - Random assignment of selected players to a configurable number of teams
-- Drag-and-drop sorting of players within teams using `shinyjqui`
-- Manual editing of teams (add/remove members per team)
-- Export current teams to an `.xlsx` Excel file using `writexl` (commented out since V 0.3.0) as well as an `.png` file
-- Responsive UI with live updates
-- Password protection using `shinymanager`
+- Validation that the **number of captains matches the number of teams**
+- Automatic placement of captains at the **top of each team**
+- Manual captain reassignment via dropdown after team creation
+- Automatic validation and warning if captains are not assigned uniquely across teams
+- Manual editing of teams:
+  - add members to existing teams
+  - remove non-captain members from teams
+- Safeguards preventing:
+  - duplicate team assignments
+  - manual removal of captains from teams
+  - deletion of active captains from the player list
+- Automatic scroll to the team section after generating teams
+- PDF export with captains clearly marked as `(Captain)`
+- Optional, documented Google Sheets / Google Drive integration for persistent shared storage
+- Compatibility fallback so the app still runs when external storage is disabled
 
 ## Use Cases
 
 This app can be helpful for a wide range of scenarios, including:
 
-- **Conducting experiments**: Distribute subjects randomly to either treatment or control groups. (Completely randomized design)
-- **University Seminars or Group Work**: Easily divide students into teams for projects or discussion groups.
-- **Workshops and Trainings**: Randomly assign participants to breakout groups.
-- **Sports and Hobby Groups**: Randomize players for weekly games or tournaments (e.g., soccer, volleyball, chess).
-- **Hackathons and Ideation Events**: Ensure balanced, randomized teams for fair collaboration.
-- **Language or Debate Clubs**: Organize rotating teams for practice rounds or friendly competitions.
-- **Game Nights or Board Game Events**: Shuffle groups for casual or competitive gameplay.
-
+- **Conducting experiments**: Randomly distribute participants into treatment and control groups
+- **University seminars or group work**: Divide students into teams for projects or discussion groups
+- **Workshops and trainings**: Assign participants to breakout groups
+- **Sports and hobby groups**: Randomize players for weekly games or tournaments
+- **Hackathons and ideation events**: Create balanced random teams quickly
+- **Language or debate clubs**: Organize rotating teams for practice rounds
+- **Game nights or board game events**: Shuffle groups for casual or competitive play
 
 ## Requirements
 
 - R (>= 4.0)
 
-- The following R packages for shinyapp_set_deploy.R:
-  - `rsconnect`
-  - `shiny`
-  - `shinymanager`
-  - `writexl`
-  - `gridExtra`
-  - `grid`
-  - `dplyr`
-  - `bslib`
-  
-- The following R packages for shinyapp_set_deploy.R:
-  - `shiny`
-  - `shinymanager`
-  - `gridExtra`
-  - `grid`
-  - `dplyr`
-  - `bslib`
+### Core packages for the current app version
 
-Optional packages for cloud storage integration via Google Drive:
+- `shiny`
+- `shinymanager`
+- `gridExtra`
+- `grid`
+- `dplyr`
+- `bslib`
 
-  - `googlesheets4`
-  - `googledrive`
+### Optional packages
 
-Optional packages for Excel export: 
-  - `writexl`
- 
-Example app is hosted via [shinyapps.io](https://docs.posit.co/shinyapps.io/guide/)
+For Google Drive / Google Sheets integration:
 
-## Lates Update V 0.3.0
-### Version 0.4.0 – 2026-04-05
+- `googlesheets4`
+- `googledrive`
+
+For Excel export (currently still in the code, but commented out):
+
+- `writexl`
+
+For deployment setup scripts:
+
+- `rsconnect`
+
+Example deployment can be done via [shinyapps.io](https://docs.posit.co/shinyapps.io/guide/)
+
+## Latest Update
+
+### Version 0.4.0 – 2026-04-23
 
 #### Added
-- Modernized UI using **Bootstrap 5 (`bslib`)** with a custom theme.
-- Custom styling including colors, typography, spacing, and rounded UI components.
-- Logo support on the authentication screen.
-- Captain selection system for team creation.
-- Separate player states for **Present** and **Captain**.
-- Dynamic **Select all / Deselect all** functionality for player availability.
-- Captain reassignment via dropdown menus for each team after team creation.
-- Automatic team rebuilding when captain assignments change.
-- Warning system if captains are not uniquely assigned across teams.
-- Team cards displaying team name and number of members.
-- Additional validation when editing teams.
-- Safeguards preventing:
-  - duplicate team assignments,
-  - manual removal of captains from teams,
-  - deletion of captains from the player list.
-- Improved PDF export including captain labeling `(Captain)`.
-- Compatibility fallback functions to allow the app to run without external storage.
-- Extensive inline documentation regarding storage and deployment options.
 
-#### Changed
-- Application language updated from **German to English**.
-- UI structure reorganized into clearer sections:
-  - player list management
-  - player selection
-  - team creation
+- Fully redesigned UI with a cleaner card-based layout
+- Responsive styling improvements for desktop and mobile devices
+- New help system with:
+  - login-screen help overlay
+  - in-app help modal
+  - structured usage instructions
+- New app header with title, subtitle, and help button
+- Automatic scroll-to-teams behavior after team generation
+- Dedicated content sections for:
+  - player list
+  - player management
+  - random team generation
+  - team display
   - team editing
-- Team generation rules now require:
-  - the number of captains to match the number of teams,
-  - at least one captain.
-- Captains are automatically placed as the **first member of each team**.
-- Error handling improved using **modal dialogs** instead of inline messages.
-- Export section appears only when teams exist.
-- Export formatting improved for readability.
+  - export
+- Improved login area with logo placeholder and help access
+- Footer shown after team generation
 
-#### Storage
-- Removed default persistence via a local `.rds` file.
-- Introduced a temporary **hardcoded player list** for development/testing.
-- Added a fully documented template for **Google Sheets / Google Drive integration**.
+#### Improved captain workflow
+
+- Clear distinction between **present players** and **captains**
+- Captains are automatically treated as selected for team creation
+- Captains are inserted as the first member of each team
+- Captains can be reassigned after randomization through dropdown menus
+- Automatic validation checks whether captains remain uniquely assigned across teams
+- Warning message displayed if captain assignment becomes inconsistent
+
+#### Improved team workflow
+
+- Teams are shown only after they have been created
+- Team display is now organized in styled team cards
+- Team cards show both team name and current team size
+- Team editing remains possible after generation
+- Manual edits automatically preserve captain logic
+
+#### Improved security and usability
+
+- Password protection remains active through `shinymanager`
+- Credentials updated to placeholder admin/guest accounts for safer template usage
+- Inactivity logout timing adjusted in the JavaScript timer logic
+- Better modal styling for error and help dialogs
 
 #### Export
-- PDF export improved and remains active.
-- Excel export functionality is still present in the code, but commented out.
+
+- PDF export remains active
+- Captains are explicitly labeled as `(Captain)` in the export
+- Export section is shown only when teams are available
+- Excel export is still included in the source code, but remains commented out
+
+#### Storage
+
+- Current version continues to use a **local predefined player list** for development/testing
+- Google Sheets / Google Drive integration remains prepared in the source code
+- Compatibility helper functions ensure the app runs without active cloud storage
+
+#### Changed
+
+- App structure was reorganized into a more guided single-page flow
+- Labels and button texts were refined for clarity
+- Default number of teams changed to `3`
+- Team section is now visually highlighted after generation
+- UI elements are more consistent in wording and appearance
 
 #### Internal
-- Refactored reactive state management for players, captains, and teams.
-- Added helper functions for:
-  - synchronizing player states,
-  - validating captain assignments,
-  - rebuilding teams,
-  - preparing export data.
+
+- Server logic cleaned up and reorganized
+- Help content modularized into reusable UI helper functions
+- Improved separation between:
+  - shared help content
+  - main app UI
+  - secure login wrapper
+- Custom JavaScript added for smooth scrolling to the teams section
 
 ---
 
-## Update V 0.2.0
-- Adds password protection
-- No deselect others when someone new joins
-- Displays number of selected names
-- Fixes bad handling via smartphones
-- Option of saving results as a PDF
+## Previous Updates
+
+### Version 0.3.0
+
+- Modernized UI using **Bootstrap 5 (`bslib`)** with a custom theme
+- Captain selection system for team creation
+- Separate player states for **Present** and **Captain**
+- Dynamic **Select all / Deselect all** functionality
+- Captain reassignment via dropdown menus after team creation
+- Automatic team rebuilding when captain assignments change
+- Warning system for invalid captain assignments
+- Improved PDF export including captain labeling
+- Compatibility fallback functions for disabled external storage
+- Extensive inline documentation for storage and deployment options
+
+### Version 0.2.0
+
+- Added password protection
+- Prevented deselecting others when someone new joins
+- Displayed number of selected names
+- Improved handling on smartphones
+- Added option to save results as a PDF
+
+## Notes on Storage
+
+The current app version uses a hardcoded player list for local testing and development.
+
+For production or multi-user deployment, the code already contains a prepared template for external persistence via:
+
+- Google Sheets
+- Google Drive

@@ -74,6 +74,8 @@ For deployment setup scripts:
 
 Example deployment can be done via [shinyapps.io](https://docs.posit.co/shinyapps.io/guide/)
 
+The example app can be assessed via [https://gstahn.shinyapps.io/Teams_randomizer/](https://gstahn.shinyapps.io/Teams_randomizer/). Use **admin** as the User and **change_me_1** as the password.
+
 ## Latest Update
 
 ### Version 0.4.0 – 2026-04-23
